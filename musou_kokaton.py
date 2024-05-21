@@ -149,6 +149,8 @@ class Bomb(pg.sprite.Sprite):
         爆弾を速度ベクトルself.vx, self.vyに基づき移動させる
         引数 screen：画面Surface
         """
+
+        
         self.rect.move_ip(self.speed*self.vx, self.speed*self.vy)
         if check_bound(self.rect) != (True, True):
             self.kill()
@@ -238,6 +240,7 @@ class Enemy(pg.sprite.Sprite):
             self.vy = 0
             self.state = "stop"
         self.rect.centery += self.vy
+        
 
 
 class Score:
@@ -258,6 +261,67 @@ class Score:
         self.image = self.font.render(f"Score: {self.value}", 0, self.color)
         screen.blit(self.image, self.rect)
 
+class life_gage(pg.sprite.Sprite):
+    """
+    ライフゲージの画像surfaceを作成
+    """
+    # life_imgs = [pg.image.load(f"life_gage{i}.png") for i in range(1, 11), 0, 2.0]
+
+    
+    def __init__(self,screen):
+        self.colors = [(255, 0, 0), (0, 255, 0), (255, 255, 0)]
+        self.screen = screen
+
+        # hpバーの幅・高さ
+        self.hp_width = 300 # + 6
+        self.hp_height = 40  #+ 6
+
+        # HPバーを表示させたい位置
+        self.hp_x = 160
+        self.hp_y = 800
+
+        self.hp = 100
+
+        self.HP_bar = pg.Surface((self.hp_width,self.hp_height))
+        self.HP_back = pg.Surface((self.hp_width +6,self.hp_height+6))
+        pg.draw.rect(self.HP_back, (0, 0, 0), (0,0,self.hp_width,self.hp_height))
+        pg.draw.rect(self.HP_bar, self.colors[1], (0,0,self.hp_width,self.hp_height))
+        self.rect = self.HP_bar.get_rect()
+        self.rect_back = self.HP_back.get_rect()
+        
+        self.rect.centerx = self.hp_x
+        self.rect.centery = self.hp_y
+
+        self.rect_back.center = (self.hp_x, self.hp_y)
+
+        self.screen.blit(self.HP_back, self.rect_back)
+        self.screen.blit(self.HP_bar, self.rect)
+
+
+    def update(self,screen):
+        # pg.draw.rect("(0,0)~(hp,10)まで表示")
+        self.HP_bar = pg.Surface((300,self.hp_height))
+        if self.hp <= 30:
+            pg.draw.rect(self.HP_bar, self.colors[0], (0,0,self.hp_width,self.hp_height))
+        elif self.hp <= 60:
+            pg.draw.rect(self.HP_bar, self.colors[2], (0,0,self.hp_width,self.hp_height))
+        else:
+            pg.draw.rect(self.HP_bar, self.colors[1], (0,0,self.hp_width,self.hp_height))
+        self.rect = self.HP_bar.get_rect()
+        self.rect.centerx = self.hp_x
+        self.rect.centery = self.hp_y
+        screen.blit(self.HP_back, self.rect_back)
+        screen.blit(self.HP_bar, self.rect)
+
+    def dameges(self, damege):
+        self.damege = damege
+        self.damege*=3
+        self.hp_width -= self.damege
+
+        print(damege, self.damege, self.hp_width)
+        self.hp -= damege
+
+            
 
 class Shield(pg.sprite.Sprite):
     """
@@ -319,15 +383,18 @@ def main():
     screen = pg.display.set_mode((WIDTH, HEIGHT))
     bg_img = pg.image.load(f"fig/pg_bg.jpg")
     score = Score()
-    score.value = 99999
+    score.value = 0
 
     bird = Bird(3, (900, 400))
+
     bombs = pg.sprite.Group()
     beams = pg.sprite.Group()
     exps = pg.sprite.Group()
     emys = pg.sprite.Group()
     shields = pg.sprite.Group()
     gravity = pg.sprite.Group()
+
+    hp = life_gage(screen)
 
     tmr = 0
     clock = pg.time.Clock()
@@ -380,9 +447,18 @@ def main():
             if bird.state == "normal":
                 bird.change_img(8, screen) # こうかとん悲しみエフェクト
                 score.update(screen)
-                pg.display.update()
-                time.sleep(2)   
-                return
+
+                # ダメージ判定
+                hp.dameges(10)
+                # pg.display.update()
+                # time.sleep(2)
+                # time.sleep(1)
+                if hp.hp <= 0:
+                    return
+        
+        # for ----------------------------------
+            # if bossと当たったら 
+
         for bomb in pg.sprite.groupcollide(bombs, gravity, True, False).keys():
             exps.add(Explosion(bomb, 50))
             score.value += 1
@@ -397,14 +473,16 @@ def main():
             exps.add(Explosion(bomb, 50))
             score.value += 1
 
-        if len(pg.sprite.spritecollide(bird, bombs, True)) != 0:
-            bird.change_img(8, screen) # こうかとん悲しみエフェクト
-            score.update(screen)
-            pg.display.update()
-            time.sleep(2)
-            return
+        # if len(pg.sprite.spritecollide(bird, bombs, True)) != 0:
+        #     bird.change_img(8, screen) # こうかとん悲しみエフェクト
+        #     score.update(screen)
+        #     hp.dameges(20)
+        #     pg.display.update()
+        #     if hp.hp <= 0:
+        #         return
+        #     #time.sleep(2)
         
-
+        hp.update(screen)
         bird.update(key_lst, screen)
         beams.update()
         beams.draw(screen)
