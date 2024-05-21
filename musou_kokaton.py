@@ -362,6 +362,13 @@ class Gravity(pg.sprite.Sprite):
         self.rect = self.image.get_rect()
         self.rect.center = (WIDTH/2, HEIGHT/2) 
         self.life = life  # 発動時間
+
+    def update(self):
+        self.life -= 1
+        if self.life < 0:
+            self.kill()
+
+
 class EMP(pg.sprite.Sprite):
     def __init__(self, Enemy, Bomb, Surface): #敵機、爆弾、surfaceを与えている
         for emy in Enemy:
@@ -379,7 +386,7 @@ class EMP(pg.sprite.Sprite):
 
 
 def main():
-    pg.display.set_caption("真！こうかとん無双")
+    pg.display.set_caption("こうかとん伝説（仮）")
     screen = pg.display.set_mode((WIDTH, HEIGHT))
     bg_img = pg.image.load(f"fig/pg_bg.jpg")
     score = Score()
