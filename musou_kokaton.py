@@ -263,13 +263,12 @@ class Score:
 
 class life_gage(pg.sprite.Sprite):
     """
-    ライフゲージの画像surfaceを作成
+    ライフゲージの作成  
+    rectを用いてHPバーを作成し被弾するにつれてHPバーが減るようにする
     """
-    # life_imgs = [pg.image.load(f"life_gage{i}.png") for i in range(1, 11), 0, 2.0]
 
-    
     def __init__(self,screen):
-        self.colors = [(255, 0, 0), (0, 255, 0), (255, 255, 0)]
+        self.colors = [(255, 0, 0), (0, 255, 0), (255, 255, 0)] #ライフゲージの減少に伴って色の変化をさせる
         self.screen = screen
 
         # hpバーの幅・高さ
@@ -280,12 +279,12 @@ class life_gage(pg.sprite.Sprite):
         self.hp_x = 160
         self.hp_y = 800
 
-        self.hp = 100
+        self.hp = 100 #HPの基準
 
-        self.HP_bar = pg.Surface((self.hp_width,self.hp_height))
-        self.HP_back = pg.Surface((self.hp_width +6,self.hp_height+6))
-        pg.draw.rect(self.HP_back, (0, 0, 0), (0,0,self.hp_width,self.hp_height))
-        pg.draw.rect(self.HP_bar, self.colors[1], (0,0,self.hp_width,self.hp_height))
+        self.HP_bar = pg.Surface((self.hp_width,self.hp_height)) #HPバーの土台作り
+        self.HP_back = pg.Surface((self.hp_width +6,self.hp_height+6)) #HPバーの枠兼減少の値がわかりやすいようにする
+        pg.draw.rect(self.HP_back, (0, 0, 0), (0,0,self.hp_width,self.hp_height)) #HPバーの枠作成
+        pg.draw.rect(self.HP_bar, self.colors[1], (0,0,self.hp_width,self.hp_height)) #HPバー（緑色)の作成
         self.rect = self.HP_bar.get_rect()
         self.rect_back = self.HP_back.get_rect()
         
@@ -301,24 +300,24 @@ class life_gage(pg.sprite.Sprite):
     def update(self,screen):
         # pg.draw.rect("(0,0)~(hp,10)まで表示")
         self.HP_bar = pg.Surface((300,self.hp_height))
-        if self.hp <= 30:
+        if self.hp <= 30: #HPが30以下の時表示を赤色にする
             pg.draw.rect(self.HP_bar, self.colors[0], (0,0,self.hp_width,self.hp_height))
-        elif self.hp <= 60:
+        elif self.hp <= 60: #HPが60以下の時表示を黄色にする
             pg.draw.rect(self.HP_bar, self.colors[2], (0,0,self.hp_width,self.hp_height))
-        else:
+        else: #それ以外時表示を赤色にする
             pg.draw.rect(self.HP_bar, self.colors[1], (0,0,self.hp_width,self.hp_height))
         self.rect = self.HP_bar.get_rect()
         self.rect.centerx = self.hp_x
         self.rect.centery = self.hp_y
-        screen.blit(self.HP_back, self.rect_back)
-        screen.blit(self.HP_bar, self.rect)
+        screen.blit(self.HP_back, self.rect_back) #画面に反映
+        screen.blit(self.HP_bar, self.rect) #画面に反映
 
     def dameges(self, damege):
         self.damege = damege
-        self.damege*=3
+        self.damege*=3 #303行で300としているため100に割合をあわせるため
         self.hp_width -= self.damege
 
-        print(damege, self.damege, self.hp_width)
+        print(damege, self.damege, self.hp_width) #ちゃんと実行されてHPが減っているかの確認
         self.hp -= damege
 
             
@@ -456,15 +455,15 @@ def main():
                 score.update(screen)
 
                 # ダメージ判定
-                hp.dameges(10)
+                hp.dameges(10) #ダメージの割合、今回は敵の攻撃をくらったら10分の1ずつHPが減っていくようにする
                 # pg.display.update()
                 # time.sleep(2)
                 # time.sleep(1)
-                if hp.hp <= 0:
+                if hp.hp <= 0: #HPがなくなったらゲームオーバー
                     return
         
-        # for ----------------------------------
-            # if bossと当たったら 
+        # for ---------------------------------- 
+            # if bossと当たったら チームメンバーがボスを作ったとき用
 
         for bomb in pg.sprite.groupcollide(bombs, gravity, True, False).keys():
             exps.add(Explosion(bomb, 50))
