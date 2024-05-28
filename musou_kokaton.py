@@ -100,6 +100,7 @@ class Bird(pg.sprite.Sprite):
                 self.speed = 20
             else:
                 self.speed = 10
+                
 
             
         self.rect.move_ip(self.speed*sum_mv[0], self.speed*sum_mv[1])
@@ -160,6 +161,8 @@ class Bomb(pg.sprite.Sprite):
         爆弾を速度ベクトルself.vx, self.vyに基づき移動させる
         引数 screen：画面Surface
         """
+
+        
         self.rect.move_ip(self.speed*self.vx, self.speed*self.vy)
         if check_bound(self.rect) != (True, True):
             self.kill()
@@ -233,10 +236,10 @@ class Enemy(pg.sprite.Sprite):
         super().__init__()
         self.image = random.choice(__class__.imgs)
         self.rect = self.image.get_rect()
-        self.rect.center = random.randint(0, WIDTH), 0
-        self.vy = +6
-        self.bound = random.randint(50, int(HEIGHT/2))  # 停止位置
-        self.state = "down"  # 降下状態or停止状態
+        self.rect.center =WIDTH, random.randint(0, HEIGHT)
+        self.vx = +6
+        self.bound = random.randint(WIDTH/2,WIDTH) # 停止位置
+        self.state = "LEFT"  # 進行状態or停止状態
         self.interval = random.randint(50, 300)  # 爆弾投下インターバル
         self.hp = 1  # HPの追加
 
@@ -246,10 +249,11 @@ class Enemy(pg.sprite.Sprite):
         ランダムに決めた停止位置_boundまで降下したら，_stateを停止状態に変更する
         引数 screen：画面Surface
         """
-        if self.rect.centery > self.bound:
-            self.vy = 0
+        if self.rect.centerx < self.bound:
+            self.vx = 0
             self.state = "stop"
         self.rect.centery += self.vy
+        
 
 
 class Score:
@@ -270,6 +274,66 @@ class Score:
         self.image = self.font.render(f"Score: {self.value}", 0, self.color)
         screen.blit(self.image, self.rect)
 
+class life_gage(pg.sprite.Sprite):
+    """
+    ライフゲージの作成  
+    rectを用いてHPバーを作成し被弾するにつれてHPバーが減るようにする
+    """
+
+    def __init__(self,screen):
+        self.colors = [(255, 0, 0), (0, 255, 0), (255, 255, 0)] #ライフゲージの減少に伴って色の変化をさせる
+        self.screen = screen
+
+        # hpバーの幅・高さ
+        self.hp_width = 300 # + 6
+        self.hp_height = 40  #+ 6
+
+        # HPバーを表示させたい位置
+        self.hp_x = 160
+        self.hp_y = 800
+
+        self.hp = 100 #HPの基準
+
+        self.HP_bar = pg.Surface((self.hp_width,self.hp_height)) #HPバーの土台作り
+        self.HP_back = pg.Surface((self.hp_width +6,self.hp_height+6)) #HPバーの枠兼減少の値がわかりやすいようにする
+        pg.draw.rect(self.HP_back, (0, 0, 0), (0,0,self.hp_width,self.hp_height)) #HPバーの枠作成
+        pg.draw.rect(self.HP_bar, self.colors[1], (0,0,self.hp_width,self.hp_height)) #HPバー（緑色)の作成
+        self.rect = self.HP_bar.get_rect()
+        self.rect_back = self.HP_back.get_rect()
+        
+        self.rect.centerx = self.hp_x
+        self.rect.centery = self.hp_y
+
+        self.rect_back.center = (self.hp_x, self.hp_y)
+
+        self.screen.blit(self.HP_back, self.rect_back)
+        self.screen.blit(self.HP_bar, self.rect)
+
+
+    def update(self,screen):
+        # pg.draw.rect("(0,0)~(hp,10)まで表示")
+        self.HP_bar = pg.Surface((300,self.hp_height))
+        if self.hp <= 30: #HPが30以下の時表示を赤色にする
+            pg.draw.rect(self.HP_bar, self.colors[0], (0,0,self.hp_width,self.hp_height))
+        elif self.hp <= 60: #HPが60以下の時表示を黄色にする
+            pg.draw.rect(self.HP_bar, self.colors[2], (0,0,self.hp_width,self.hp_height))
+        else: #それ以外時表示を赤色にする
+            pg.draw.rect(self.HP_bar, self.colors[1], (0,0,self.hp_width,self.hp_height))
+        self.rect = self.HP_bar.get_rect()
+        self.rect.centerx = self.hp_x
+        self.rect.centery = self.hp_y
+        screen.blit(self.HP_back, self.rect_back) #画面に反映
+        screen.blit(self.HP_bar, self.rect) #画面に反映
+
+    def dameges(self, damege):
+        self.damege = damege
+        self.damege*=3 #303行で300としているため100に割合をあわせるため
+        self.hp_width -= self.damege
+
+        print(damege, self.damege, self.hp_width) #ちゃんと実行されてHPが減っているかの確認
+        self.hp -= damege
+
+            
 
 class Shield(pg.sprite.Sprite):
     """
@@ -338,6 +402,69 @@ class EMP(pg.sprite.Sprite):
         self.life -= 1
         if self.life < 0:
             self.kill()
+            
+           
+class change_Boss():
+    """
+    １キーを押したときにボス戦警告のポップアップ表示
+    Yesを押したときボス戦開始エフェクト+背景切り替え
+    """
+    def __init__(self, screen):
+        self.screen = screen
+        self.rct = pg.Surface((800, 450))  # Surfaceを生成
+        pg.draw.rect(self.rct, (128, 128, 128), (0, 0, 800, 450))  # 灰色の矩形を生成
+        # screen.blit(self.rct, (WIDTH/2, WIDTH/2))
+        # time.sleep(1)
+        # self.bg_img = pg.image.load(f"fig/aozora.jpg")  # ボス戦の画像読み込み
+        # self.bg_img = pg.transform.scale(self.bg_img, (WIDTH, HEIGHT))  # ボス戦の背景画像サイズを調整
+        
+        self.font = pg.font.Font(None, 130)  # 文字の大きさ
+        
+        # 文字色の設定
+        self.color = (255, 255, 255)
+        self.color_red = (255, 0, 0)
+        
+        self.Yes = self.font.render("Yes", 0, self.color)
+        self.No = self.font.render("No", 0, self.color)
+        self.Ready = self.font.render("Are you ready ?", 0, self.color_red)
+        
+        # 透明度を設定
+        self.rct.set_alpha(200)
+        self.Yes.set_alpha(200)
+        self.No.set_alpha(200)
+        self.Ready.set_alpha(200)
+        
+        # 形の値を取得
+        self.rect = self.Yes.get_rect()
+        self.rect2 = self.No.get_rect()
+        self.rect3 = self.Ready.get_rect()
+        
+        self.rect.center = 600, 600  # "Yes"の位置設定
+        self.rect2.center = 1000, 600  # "No"の位置設定
+        self.rect3.center = 800, 400   # "Are you ready?"の位置設定
+        
+        self.change = True  # ポップアップが表示されている状態に設定 (True : 表示, False: 非表示)
+
+    def update(self, screen:pg.Surface):
+        screen.blit(self.rct, (400, 300))  # Surfaceの描画、座標設定
+        screen.blit(self.Yes, self.rect)  # Yesの描画
+        screen.blit(self.No, self.rect2)  # Noの描画
+        screen.blit(self.Ready, self.rect3)  # Are you ready?の描画
+        
+    def fade_in_out(self):
+        fade_surface = pg.Surface((WIDTH, HEIGHT))
+        fade_surface.fill((0, 0, 0))
+        for i in range(0, 256, 5):  # フェードイン
+            fade_surface.set_alpha(i)
+            self.screen.blit(fade_surface, (0, 0))
+            pg.display.flip()
+            pg.time.delay(30)
+        
+        # self.screen.blit(self.bg_img, (0, 0))  # 背景画像を描画
+        # pg.display.flip()
+        # time.sleep(5)  # 背景画像を３秒間表示
+            
+            
 
 
 class Powerup:
@@ -399,11 +526,16 @@ def main():
     pg.display.set_caption("こうかとん伝説（仮）")
     screen = pg.display.set_mode((WIDTH, HEIGHT))
     bg_img = pg.image.load(f"fig/pg_bg.jpg")
+    # bg_img2 = pg.image.load(f"fig/aozora.jpg")  # ボス戦の背景画像
+    # bg_img2 = pg.transform.scale(bg_img2, (WIDTH, HEIGHT))  # ボス戦の背景画像サイズを調整
+   
+    # wait = WebDriverWait(driver=driver, timeout=60)
     score = Score()
     score.value = 99999  # 実行確認のために仮置き、後で消す
     power = Powerup()
     sp = Skillpoint()
     sp.value = 99999  # 実行確認のために仮置き、後で消す
+    changeBoss = None  # 初期状態を設定
     bird = Bird(3, (900, 400))
     bombs = pg.sprite.Group()
     beams = pg.sprite.Group()
@@ -413,18 +545,33 @@ def main():
     gravity = pg.sprite.Group()
     bosses = pg.sprite.Group()
     boss = Boss()
+    hp = life_gage(screen)
+    #スライド
+    bg_img2 = pg.transform.flip(bg_img,True,False) 
+    kk_img = pg.transform.flip(bg_img,True,False)
+    kk_rct = kk_img.get_rect()
     tmr = 0
     clock = pg.time.Clock()
     
     while True:
+        x=0
+        y=0
         key_lst = pg.key.get_pressed()
         for event in pg.event.get():
             if event.type == pg.QUIT:
                 return 0
-            if event.type == pg.KEYDOWN and event.key == pg.K_1:
+            if event.type == pg.KEYDOWN and event.key == pg.K_1 and (score.value >= 300):  # 1キーを押したときポップアップを表示
+                changeBoss = change_Boss(screen) # クラス呼び出し
                 score.value -= 100
                 boss.boss_flag = True
                 bosses.add(boss)
+            if event.type == pg.MOUSEBUTTONDOWN:
+                if changeBoss.rect.collidepoint(event.pos):
+                    changeBoss.fade_in_out()
+                    bg_img = pg.image.load(f"fig/aozora.jpg")
+                    changeBoss = None  # ポップアップを閉じる
+                elif changeBoss.rect2.collidepoint(event.pos):
+                    changeBoss = None  # ポップアップを閉じる
             if event.type == pg.KEYDOWN and event.key == pg.K_SPACE:
                 beams.add(Beam(bird))
             if event.type == pg.KEYDOWN and event.key == pg.K_RSHIFT and (sp.value >= 5):  # 右シフトキーを押したときかつスキルポイントが5以上のとき
@@ -442,8 +589,18 @@ def main():
                 sp.value -= 3  # 消費SP
                 shields.add(Shield(bird, 400))
                 print(len(shields))
-            #if event.type == pg.KEYDOWN and event.key == pg.K_1:
         screen.blit(bg_img, [0, 0])
+        
+        #スライド
+        kk_rct.move_ip((x-1,y))
+
+        x=tmr%3200
+        screen.blit(bg_img, [-x, 0])
+        screen.blit(bg_img2,[-x+1600,0])
+        screen.blit(bg_img, [-x+3200,0])
+        screen.blit(bg_img2,[-x+4800,0])
+
+        screen.blit(kk_img,kk_rct)
 
         if boss.boss_flag == True:
             if tmr%30 == 0:
@@ -487,9 +644,18 @@ def main():
             if bird.state == "normal":
                 bird.change_img(8, screen) # こうかとん悲しみエフェクト
                 score.update(screen)
-                pg.display.update()
-                time.sleep(2)   
-                return
+
+                # ダメージ判定
+                hp.dameges(10) #ダメージの割合、今回は敵の攻撃をくらったら10分の1ずつHPが減っていくようにする
+                # pg.display.update()
+                # time.sleep(2)
+                # time.sleep(1)
+                if hp.hp <= 0: #HPがなくなったらゲームオーバー
+                    return
+        
+        # for ---------------------------------- 
+            # if bossと当たったら チームメンバーがボスを作ったとき用
+
         for bomb in pg.sprite.groupcollide(bombs, gravity, True, False).keys():
             bomb.hp -= power.value  # 爆弾の耐久力を自分の攻撃力分だけ削る
             if bomb.hp <= 0:  # 爆弾の耐久力が0以下の時
@@ -507,7 +673,6 @@ def main():
         for bomb in pg.sprite.groupcollide(bombs, shields, True, False).keys():
             exps.add(Explosion(bomb, 50))
             score.value += 1
-
         if len(pg.sprite.spritecollide(bird, bombs, True)) != 0:
             bird.change_img(8, screen) # こうかとん悲しみエフェクト
             score.update(screen)
@@ -516,9 +681,8 @@ def main():
             return
         for beam in pg.sprite.groupcollide(beams, bosses, True, False).keys(): #ボスとビームの衝突判定、爆発エフェクト
             exps.add(Explosion(beam, 50))
-            bosses.update(10, score)
-        
-
+            bosses.update(10, score)        
+        hp.update(screen)
         bird.update(key_lst, screen)
         beams.update()
         beams.draw(screen)
@@ -536,6 +700,8 @@ def main():
         shields.draw(screen)
         power.update(screen)
         sp.update(screen)
+        if changeBoss is not None:
+            changeBoss.update(screen)
         pg.display.update()
         tmr += 1
         clock.tick(50)
