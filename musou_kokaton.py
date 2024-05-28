@@ -395,9 +395,9 @@ def main():
                 gravity.add(Gravity(400))
                 sp.value -= 10  # 消費SP
             if event.type == pg.KEYDOWN and event.key == pg.K_e:
-                if sp.value > 20:
+                if sp.value > 8:
                     EMP(emys, bombs, screen)
-                    sp.value -= 20  # 消費SP
+                    sp.value -= 10  # 消費SP
             if event.type == pg.KEYDOWN and event.key == pg.K_w and score.value >= 50 and len(shields) == 0:# SHIFTを押してからCaps lockを押す
                 sp.value -= 3  # 消費SP
                 shields.add(Shield(bird, 400))
