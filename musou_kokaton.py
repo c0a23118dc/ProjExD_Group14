@@ -528,7 +528,7 @@ def main():
     bg_img = pg.image.load(f"fig/pg_bg.jpg")
     # bg_img2 = pg.image.load(f"fig/aozora.jpg")  # ボス戦の背景画像
     # bg_img2 = pg.transform.scale(bg_img2, (WIDTH, HEIGHT))  # ボス戦の背景画像サイズを調整
-    
+   
     # wait = WebDriverWait(driver=driver, timeout=60)
     score = Score()
     score.value = 99999  # 実行確認のために仮置き、後で消す
@@ -536,9 +536,7 @@ def main():
     sp = Skillpoint()
     sp.value = 99999  # 実行確認のために仮置き、後で消す
     changeBoss = None  # 初期状態を設定
-
     bird = Bird(3, (900, 400))
-
     bombs = pg.sprite.Group()
     beams = pg.sprite.Group()
     exps = pg.sprite.Group()
@@ -574,7 +572,6 @@ def main():
                     changeBoss = None  # ポップアップを閉じる
                 elif changeBoss.rect2.collidepoint(event.pos):
                     changeBoss = None  # ポップアップを閉じる
-                    
             if event.type == pg.KEYDOWN and event.key == pg.K_SPACE:
                 beams.add(Beam(bird))
             if event.type == pg.KEYDOWN and event.key == pg.K_RSHIFT and (sp.value >= 5):  # 右シフトキーを押したときかつスキルポイントが5以上のとき
@@ -676,7 +673,6 @@ def main():
         for bomb in pg.sprite.groupcollide(bombs, shields, True, False).keys():
             exps.add(Explosion(bomb, 50))
             score.value += 1
-
         if len(pg.sprite.spritecollide(bird, bombs, True)) != 0:
             bird.change_img(8, screen) # こうかとん悲しみエフェクト
             score.update(screen)
@@ -685,8 +681,7 @@ def main():
             return
         for beam in pg.sprite.groupcollide(beams, bosses, True, False).keys(): #ボスとビームの衝突判定、爆発エフェクト
             exps.add(Explosion(beam, 50))
-            bosses.update(10, score)
-        
+            bosses.update(10, score)        
         hp.update(screen)
         bird.update(key_lst, screen)
         beams.update()
@@ -705,7 +700,6 @@ def main():
         shields.draw(screen)
         power.update(screen)
         sp.update(screen)
-
         if changeBoss is not None:
             changeBoss.update(screen)
         pg.display.update()
