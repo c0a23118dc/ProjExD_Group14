@@ -326,8 +326,8 @@ class change_Boss():
         pg.draw.rect(self.rct, (128, 128, 128), (0, 0, 800, 450))  # 灰色の矩形を生成
         # screen.blit(self.rct, (WIDTH/2, WIDTH/2))
         # time.sleep(1)
-        self.bg_img = pg.image.load(f"fig/aozora.jpg")  # ボス戦の画像読み込み
-        self.bg_img = pg.transform.scale(self.bg_img, (WIDTH, HEIGHT))  # ボス戦の背景画像サイズを調整
+        # self.bg_img = pg.image.load(f"fig/aozora.jpg")  # ボス戦の画像読み込み
+        # self.bg_img = pg.transform.scale(self.bg_img, (WIDTH, HEIGHT))  # ボス戦の背景画像サイズを調整
         
         self.font = pg.font.Font(None, 130)  # 文字の大きさ
         
@@ -371,9 +371,9 @@ class change_Boss():
             pg.display.flip()
             pg.time.delay(30)
         
-        self.screen.blit(self.bg_img, (0, 0))  # 背景画像を描画
-        pg.display.flip()
-        time.sleep(5)  # 背景画像を３秒間表示
+        # self.screen.blit(self.bg_img, (0, 0))  # 背景画像を描画
+        # pg.display.flip()
+        # time.sleep(5)  # 背景画像を３秒間表示
             
             
 
@@ -410,6 +410,7 @@ def main():
             if event.type == pg.MOUSEBUTTONDOWN:
                 if changeBoss.rect.collidepoint(event.pos):
                     changeBoss.fade_in_out()
+                    bg_img = pg.image.load(f"fig/aozora.jpg")
                     changeBoss = None  # ポップアップを閉じる
                 elif changeBoss.rect2.collidepoint(event.pos):
                     changeBoss = None  # ポップアップを閉じる
