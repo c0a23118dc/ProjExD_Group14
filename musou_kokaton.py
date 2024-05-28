@@ -242,7 +242,7 @@ class Enemy(pg.sprite.Sprite):
         if self.rect.centerx < self.bound:
             self.vx = 0
             self.state = "stop"
-        self.rect.centery += self.vy
+        self.rect.centerx -= self.vx
         
 
 
