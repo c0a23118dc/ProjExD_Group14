@@ -125,7 +125,7 @@ class Bomb(pg.sprite.Sprite):
     """
     colors = [(255, 0, 0), (0, 255, 0), (0, 0, 255), (255, 255, 0), (255, 0, 255), (0, 255, 255)]
 
-    def __init__(self, emy: "Enemy", bird: Bird):
+    def __init__(self, emy: "Enemy", bird: Bird, ):
         """
         爆弾円Surfaceを生成する
         引数1 emy：爆弾を投下する敵機
@@ -314,13 +314,29 @@ class EMP(pg.sprite.Sprite):
             self.kill()
 
 
+class Boss(pg.sprite.Sprite):
+    def __init__(self, ):
+        super().__init__()
+        self.image = pg.image.load(f"fig/last.png") #ボス画像の読み込み
+        self.image = pg.transform.scale(self.image, (WIDTH/3, HEIGHT*(6/10))) #画像の大きさ調整
+        self.rect = self.image.get_rect() #座標の取得
+        self.rect.center = (WIDTH*(17/20), HEIGHT/2) #座標の指定
+        self.B_HP = 100 #ボスのHP
+
+    def update(self, M_life, score: Score):
+        self.B_HP -= M_life
+        print(self.B_HP)
+        if self.B_HP <= 0:
+            score.value += 200
+            self.kill()
+
+
 def main():
     pg.display.set_caption("真！こうかとん無双")
     screen = pg.display.set_mode((WIDTH, HEIGHT))
     bg_img = pg.image.load(f"fig/pg_bg.jpg")
     score = Score()
     score.value = 99999
-
     bird = Bird(3, (900, 400))
     bombs = pg.sprite.Group()
     beams = pg.sprite.Group()
@@ -328,6 +344,7 @@ def main():
     emys = pg.sprite.Group()
     shields = pg.sprite.Group()
     gravity = pg.sprite.Group()
+    bosses = pg.sprite.Group()
 
     tmr = 0
     clock = pg.time.Clock()
@@ -336,6 +353,9 @@ def main():
         for event in pg.event.get():
             if event.type == pg.QUIT:
                 return 0
+            if event.type == pg.KEYDOWN and event.key == pg.K_1:
+                score.value -= 100
+                bosses.add(Boss())
             if event.type == pg.KEYDOWN and event.key == pg.K_SPACE:
                 beams.add(Beam(bird))
             if event.type == pg.KEYDOWN and event.key == pg.K_RSHIFT and (score.value >= 100):
@@ -354,6 +374,7 @@ def main():
                 score.value -= 50
                 shields.add(Shield(bird, 400))
                 print(len(shields))
+            #if event.type == pg.KEYDOWN and event.key == pg.K_1:
         screen.blit(bg_img, [0, 0])
 
         if tmr%200 == 0:  # 200フレームに1回，敵機を出現させる
@@ -403,6 +424,9 @@ def main():
             pg.display.update()
             time.sleep(2)
             return
+        for beam in pg.sprite.groupcollide(beams, bosses, True, False).keys(): #ボスとビームの衝突判定、爆発エフェクト
+            exps.add(Explosion(beam, 50))
+            bosses.update(10, score)
         
 
         bird.update(key_lst, screen)
@@ -419,6 +443,8 @@ def main():
         score.update(screen)
         shields.update()
         shields.draw(screen)
+        bosses.draw(screen)
+        
 
         pg.display.update()
         tmr += 1
