@@ -132,12 +132,13 @@ class Bomb(pg.sprite.Sprite):
         引数2 bird：攻撃対象のこうかとん
         """
         super().__init__()
+        self.mode = mode
         # 爆弾を投下するemyから見た攻撃対象のbirdの方向を計算
         if mode == "emy":
             rad = random.randint(10, 50)  # 爆弾円の半径：10以上50以下の乱数
             self.image = pg.Surface((2*rad, 2*rad))
-            color = random.choice(__class__.colors)  # 爆弾円の色：クラス変数からランダム選択
-            pg.draw.circle(self.image, color, (rad, rad), rad)
+            self.color = random.choice(__class__.colors)  # 爆弾円の色：クラス変数からランダム選択
+            pg.draw.circle(self.image, self.color, (rad, rad), rad)
             self.image.set_colorkey((0, 0, 0))
             self.rect = self.image.get_rect()
             self.vx, self.vy = calc_orientation(emy.rect, bird.rect)  
@@ -238,7 +239,7 @@ class Enemy(pg.sprite.Sprite):
         self.rect = self.image.get_rect()
         self.rect.center =WIDTH, random.randint(0, HEIGHT)
         self.vx = +6
-        self.bound = random.randint(int(WIDTH/2),WIDTH) # 停止位置
+        self.bound = random.randint(WIDTH/2,WIDTH) # 停止位置
         self.state = "LEFT"  # 進行状態or停止状態
         self.interval = random.randint(50, 300)  # 爆弾投下インターバル
         self.hp = 1  # HPの追加
@@ -252,7 +253,7 @@ class Enemy(pg.sprite.Sprite):
         if self.rect.centerx < self.bound:
             self.vx = 0
             self.state = "stop"
-        self.rect.centery += self.vy
+        self.rect.centerx -= self.vx
         
 
 
@@ -290,7 +291,7 @@ class life_gage(pg.sprite.Sprite):
 
         # HPバーを表示させたい位置
         self.hp_x = 160
-        self.hp_y = 800
+        self.hp_y = 700
 
         self.hp = 100 #HPの基準
 
@@ -535,7 +536,7 @@ def main():
     power = Powerup()
     sp = Skillpoint()
     sp.value = 99999  # 実行確認のために仮置き、後で消す
-    changeBoss = None  # 初期状態を設定
+    # changeBoss = None  # 初期状態を設定
     bird = Bird(3, (900, 400))
     bombs = pg.sprite.Group()
     beams = pg.sprite.Group()
@@ -546,10 +547,14 @@ def main():
     bosses = pg.sprite.Group()
     boss = Boss()
     hp = life_gage(screen)
+    mode = "emy"
+    bg_img_b = pg.image.load(f"fig/aozora.jpg")
+    pop_flag = False
     #スライド
+
     bg_img2 = pg.transform.flip(bg_img,True,False) 
     kk_img = pg.transform.flip(bg_img,True,False)
-    kk_rct = kk_img.get_rect()
+    # kk_rct = kk_img.get_rect()
     tmr = 0
     clock = pg.time.Clock()
     
@@ -561,17 +566,33 @@ def main():
             if event.type == pg.QUIT:
                 return 0
             if event.type == pg.KEYDOWN and event.key == pg.K_1 and (score.value >= 300):  # 1キーを押したときポップアップを表示
+                
+                pop_flag = True
                 changeBoss = change_Boss(screen) # クラス呼び出し
+                # score.value -= 100
+                # boss.boss_flag = True
+                # bosses.add(boss)
+            if event.type == pg.KEYDOWN and pop_flag == True and event.key == pg.K_y:
+                # changeBoss = change_Boss(screen) # クラス呼び出し
                 score.value -= 100
                 boss.boss_flag = True
                 bosses.add(boss)
-            if event.type == pg.MOUSEBUTTONDOWN:
-                if changeBoss.rect.collidepoint(event.pos):
-                    changeBoss.fade_in_out()
-                    bg_img = pg.image.load(f"fig/aozora.jpg")
-                    changeBoss = None  # ポップアップを閉じる
-                elif changeBoss.rect2.collidepoint(event.pos):
-                    changeBoss = None  # ポップアップを閉じる
+                changeBoss.fade_in_out()
+
+                pop_flag = False
+
+            if event.type == pg.KEYDOWN and pop_flag == True and event.key == pg.K_n:
+                # changeBoss.change = False  # ポップアップを閉じる
+                pop_flag = False
+                
+            if boss.boss_flag == True:
+                mode = "boss"
+                # changeBoss.change = False  # ポップアップを閉じる
+                # if event.type == pg.KEYDOWN and event.key == pg.K_n:
+                #     changeBoss = None  # ポップアップを閉じる
+
+            if boss.boss_flag == False:
+                mode = "emy"
             if event.type == pg.KEYDOWN and event.key == pg.K_SPACE:
                 beams.add(Beam(bird))
             if event.type == pg.KEYDOWN and event.key == pg.K_RSHIFT and (sp.value >= 5):  # 右シフトキーを押したときかつスキルポイントが5以上のとき
@@ -589,18 +610,20 @@ def main():
                 sp.value -= 3  # 消費SP
                 shields.add(Shield(bird, 400))
                 print(len(shields))
-        screen.blit(bg_img, [0, 0])
-        
+        # screen.blit(bg_img, [0, 0])
+        print(mode)
         #スライド
-        kk_rct.move_ip((x-1,y))
+        if mode == "emy":
+            # kk_rct.move_ip((x-1,y))
+            x=tmr%3200
+            screen.blit(bg_img, [-x, 0])
+            screen.blit(bg_img2,[-x+1600,0])
+            screen.blit(bg_img, [-x+3200,0])
+            screen.blit(bg_img2,[-x+4800,0])
 
-        x=tmr%3200
-        screen.blit(bg_img, [-x, 0])
-        screen.blit(bg_img2,[-x+1600,0])
-        screen.blit(bg_img, [-x+3200,0])
-        screen.blit(bg_img2,[-x+4800,0])
-
-        screen.blit(kk_img,kk_rct)
+            # screen.blit(kk_img,kk_rct)
+        elif mode == "boss":
+            screen.blit(bg_img_b, [0, 0])
 
         if boss.boss_flag == True:
             if tmr%30 == 0:
@@ -626,10 +649,11 @@ def main():
             if bomb.hp <= 0:  # 爆弾の耐久力が0以下の時
                 exps.add(Explosion(bomb, 50))  # 爆発エフェクト
                 score.value += 1  # 1点アップ
-            if bomb.color == (255, 0, 0):  # 敵の爆弾の色が赤色のとき
-                power.value += 1  # 攻撃力アップ
-            if bomb.color == (0, 0, 255):  # 敵の爆弾の色が青色のとき
-                sp.value += 1  # スキルポイントアップ
+            if bomb.mode == "emy":
+                if bomb.color == (255, 0, 0):  # 敵の爆弾の色が赤色のとき
+                    power.value += 1  # 攻撃力アップ
+                if bomb.color == (0, 0, 255):  # 敵の爆弾の色が青色のとき
+                    sp.value += 1  # スキルポイントアップ
             """
             HPのクラスが追加されたら追加する
             今回はマージできないので追加しない
@@ -700,7 +724,9 @@ def main():
         shields.draw(screen)
         power.update(screen)
         sp.update(screen)
-        if changeBoss is not None:
+
+        # pop up
+        if pop_flag == True :
             changeBoss.update(screen)
         pg.display.update()
         tmr += 1
