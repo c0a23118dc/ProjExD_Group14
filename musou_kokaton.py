@@ -134,8 +134,8 @@ class Bomb(pg.sprite.Sprite):
         super().__init__()
         rad = random.randint(10, 50)  # 爆弾円の半径：10以上50以下の乱数
         self.image = pg.Surface((2*rad, 2*rad))
-        color = random.choice(__class__.colors)  # 爆弾円の色：クラス変数からランダム選択
-        pg.draw.circle(self.image, color, (rad, rad), rad)
+        self.color = random.choice(__class__.colors)  # 爆弾円の色：クラス変数からランダム選択
+        pg.draw.circle(self.image, self.color, (rad, rad), rad)
         self.image.set_colorkey((0, 0, 0))
         self.rect = self.image.get_rect()
         # 爆弾を投下するemyから見た攻撃対象のbirdの方向を計算
@@ -143,6 +143,7 @@ class Bomb(pg.sprite.Sprite):
         self.rect.centerx = emy.rect.centerx
         self.rect.centery = emy.rect.centery+emy.rect.height/2
         self.speed = 6
+        self.hp = 1  # HPの追加
 
     def update(self):
         """
@@ -227,6 +228,7 @@ class Enemy(pg.sprite.Sprite):
         self.bound = random.randint(50, int(HEIGHT/2))  # 停止位置
         self.state = "down"  # 降下状態or停止状態
         self.interval = random.randint(50, 300)  # 爆弾投下インターバル
+        self.hp = 1  # HPの追加
 
     def update(self):
         """
@@ -261,7 +263,7 @@ class Score:
 
 class Shield(pg.sprite.Sprite):
     """
-    スコアを50消費してこうかとんを守る防御壁を出現させるクラス
+    SPを3消費してこうかとんを守る防御壁を出現させるクラス
     Caps lock押下で出現
     """
 
@@ -305,6 +307,13 @@ class Gravity(pg.sprite.Sprite):
             self.kill()
 
 
+
+    def update(self):
+        self.life -= 1
+        if self.life < 0:
+            self.kill()    
+
+        
 class EMP(pg.sprite.Sprite):
     def __init__(self, Enemy, Bomb, Surface): #敵機、爆弾、surfaceを与えている
         for emy in Enemy:
@@ -321,12 +330,52 @@ class EMP(pg.sprite.Sprite):
             self.kill()
 
 
+class Powerup:
+    """
+    攻撃力の概念の追加
+    打ち落とした爆弾が赤色だと攻撃力＋1
+    """
+    def __init__(self):
+        self.font = pg.font.Font(None, 50)
+        self.color = (0, 0, 255)
+        self.value = 1
+        self.image = self.font.render(f"Power: {self.value}", 0, self.color)  # 画面に攻撃力の数値を追加
+        self.rect = self.image.get_rect()
+        self.rect.center = 87, HEIGHT-100
+
+    def update(self, screen: pg.Surface):
+        self.image = self.font.render(f"Power: {self.value}", 0, self.color)  # 数値を更新
+        screen.blit(self.image, self.rect)
+
+
+class Skillpoint:
+    """
+    スキルポイントの概念の追加
+    打ち落とした爆弾が青色だとSP＋1
+    """
+    def __init__(self):
+        self.font = pg.font.Font(None, 50)
+        self.color = (0, 0, 255)
+        self.value = 1
+        self.image = self.font.render(f"SP: {self.value}", 0, self.color)  # 画面にスキルポイントの数値を追加
+        self.rect = self.image.get_rect()
+        self.rect.center = 58, HEIGHT-150
+
+    def update(self, screen: pg.Surface):
+        self.image = self.font.render(f"SP: {self.value}", 0, self.color)  # 数値を追加
+        screen.blit(self.image, self.rect)
+
+
 def main():
     pg.display.set_caption("こうかとん伝説（仮）")
     screen = pg.display.set_mode((WIDTH, HEIGHT))
     bg_img = pg.image.load(f"fig/pg_bg.jpg")
     score = Score()
-    score.value = 99999
+    score.value = 99999  # 実行確認のために仮置き、後で消す
+    power = Powerup()
+    sp = Skillpoint()
+    sp.value = 99999  # 実行確認のために仮置き、後で消す
+
 
     bird = Bird(3, (900, 400))
     bombs = pg.sprite.Group()
@@ -345,20 +394,19 @@ def main():
                 return 0
             if event.type == pg.KEYDOWN and event.key == pg.K_SPACE:
                 beams.add(Beam(bird))
-            if event.type == pg.KEYDOWN and event.key == pg.K_RSHIFT and (score.value >= 100):
+            if event.type == pg.KEYDOWN and event.key == pg.K_RSHIFT and (sp.value >= 5):  # 右シフトキーを押したときかつスキルポイントが5以上のとき
                 bird.hyper_life = 500
-                score.value -= 100
-                bird.state = "hyper"
-                
-            if event.type == pg.KEYDOWN and event.key == pg.K_RETURN and score.value >= 200:  # エンター押したときかつスコアが200以上のとき
+                sp.value -= 5  # 消費SP
+                bird.state = "hyper"  
+            if event.type == pg.KEYDOWN and event.key == pg.K_RETURN and sp.value >= 10:  # エンター押したときかつスキルポイントが10以上のとき
                 gravity.add(Gravity(400))
-                score.value -= 200  # 消費スコア
+                sp.value -= 10  # 消費SP
             if event.type == pg.KEYDOWN and event.key == pg.K_e:
-                if score.value > 20:
+                if sp.value > 8:
                     EMP(emys, bombs, screen)
-                    score.value -= 20
-            if event.type == pg.KEYDOWN and event.key == pg.K_w and score.value >= 50 and len(shields) == 0:# SHIFTを押してからCaps lockを押す
-                score.value -= 50
+                    sp.value -= 8  # 消費SP
+            if event.type == pg.KEYDOWN and event.key == pg.K_w and sp.value >= 3 and len(shields) == 0:# SHIFTを押してからCaps lockを押す
+                sp.value -= 3  # 消費SP
                 shields.add(Shield(bird, 400))
                 print(len(shields))
         screen.blit(bg_img, [0, 0])
@@ -372,13 +420,27 @@ def main():
                 bombs.add(Bomb(emy, bird))
 
         for emy in pg.sprite.groupcollide(emys, beams, True, True).keys():
-            exps.add(Explosion(emy, 100))  # 爆発エフェクト
-            score.value += 10  # 10点アップ
-            bird.change_img(6, screen)  # こうかとん喜びエフェクト
+            emy.hp -= power.value  # 敵のHPを自分の攻撃力分だけ削る
+            if emy.hp <= 0:  # 敵のHPが0以下の時
+                exps.add(Explosion(emy, 100))  # 爆発エフェクト
+                score.value += 10  # 10点アップ
+                bird.change_img(6, screen)  # こうかとん喜びエフェクト
 
         for bomb in pg.sprite.groupcollide(bombs, beams, True, True).keys():
-            exps.add(Explosion(bomb, 50))  # 爆発エフェクト
-            score.value += 1  # 1点アップ
+            bomb.hp -= power.value  # 爆弾の耐久力を自分の攻撃力分だけ削る
+            if bomb.hp <= 0:  # 爆弾の耐久力が0以下の時
+                exps.add(Explosion(bomb, 50))  # 爆発エフェクト
+                score.value += 1  # 1点アップ
+            if bomb.color == (255, 0, 0):  # 敵の爆弾の色が赤色のとき
+                power.value += 1  # 攻撃力アップ
+            if bomb.color == (0, 0, 255):  # 敵の爆弾の色が青色のとき
+                sp.value += 1  # スキルポイントアップ
+            """
+            HPのクラスが追加されたら追加する
+            今回はマージできないので追加しない
+            """    
+            #if bomb.color == (0, 255, 0):
+            #    hp.value += 1  # HP回復
 
         for bomb in pg.sprite.spritecollide(bird, bombs, True):
             if bird.state == "hyper":
@@ -391,13 +453,17 @@ def main():
                 time.sleep(2)   
                 return
         for bomb in pg.sprite.groupcollide(bombs, gravity, True, False).keys():
-            exps.add(Explosion(bomb, 50))
-            score.value += 1
+            bomb.hp -= power.value  # 爆弾の耐久力を自分の攻撃力分だけ削る
+            if bomb.hp <= 0:  # 爆弾の耐久力が0以下の時
+                exps.add(Explosion(bomb, 50))
+                score.value += 1
         
         for emy in pg.sprite.groupcollide(emys, gravity, True, False).keys():
-            exps.add(Explosion(emy, 100))
-            score.value += 10
-            bird.change_img(6, screen)  # こうかとん喜びエフェクト
+            emy.hp -= power.value  # 敵のHPを自分の攻撃力分だけ削る
+            if emy.hp <= 0:  # 敵のHPが0以下の時
+                exps.add(Explosion(emy, 100))
+                score.value += 10
+                bird.change_img(6, screen)  # こうかとん喜びエフェクト
 
 
         for bomb in pg.sprite.groupcollide(bombs, shields, True, False).keys():
@@ -426,6 +492,8 @@ def main():
         score.update(screen)
         shields.update()
         shields.draw(screen)
+        power.update(screen)
+        sp.update(screen)
 
         pg.display.update()
         tmr += 1
