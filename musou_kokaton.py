@@ -223,10 +223,10 @@ class Enemy(pg.sprite.Sprite):
         super().__init__()
         self.image = random.choice(__class__.imgs)
         self.rect = self.image.get_rect()
-        self.rect.center = random.randint(0, WIDTH), 0
-        self.vy = +6
-        self.bound = random.randint(50, int(HEIGHT/2))  # 停止位置
-        self.state = "down"  # 降下状態or停止状態
+        self.rect.center =WIDTH, random.randint(0, HEIGHT)
+        self.vx = +6
+        self.bound = random.randint(WIDTH/2,WIDTH) # 停止位置
+        self.state = "LEFT"  # 進行状態or停止状態
         self.interval = random.randint(50, 300)  # 爆弾投下インターバル
         self.hp = 1  # HPの追加
 
@@ -236,10 +236,11 @@ class Enemy(pg.sprite.Sprite):
         ランダムに決めた停止位置_boundまで降下したら，_stateを停止状態に変更する
         引数 screen：画面Surface
         """
-        if self.rect.centery > self.bound:
-            self.vy = 0
+        if self.rect.centerx < self.bound:
+            self.vx = 0
             self.state = "stop"
-        self.rect.centery += self.vy
+        self.rect.centerx -= self.vx
+        print(self.rect.center)
 
 
 class Score:
@@ -385,9 +386,16 @@ def main():
     shields = pg.sprite.Group()
     gravity = pg.sprite.Group()
 
+    #スライド
+    bg_img2 = pg.transform.flip(bg_img,True,False) 
+    kk_img = pg.transform.flip(bg_img,True,False)
+    kk_rct = kk_img.get_rect()
+
     tmr = 0
     clock = pg.time.Clock()
     while True:
+        x=0
+        y=0
         key_lst = pg.key.get_pressed()
         for event in pg.event.get():
             if event.type == pg.QUIT:
@@ -410,6 +418,17 @@ def main():
                 shields.add(Shield(bird, 400))
                 print(len(shields))
         screen.blit(bg_img, [0, 0])
+        
+        #スライド
+        kk_rct.move_ip((x-1,y))
+
+        x=tmr%3200
+        screen.blit(bg_img, [-x, 0])
+        screen.blit(bg_img2,[-x+1600,0])
+        screen.blit(bg_img, [-x+3200,0])
+        screen.blit(bg_img2,[-x+4800,0])
+
+        screen.blit(kk_img,kk_rct)
 
         if tmr%200 == 0:  # 200フレームに1回，敵機を出現させる
             emys.add(Enemy())
@@ -498,6 +517,7 @@ def main():
         pg.display.update()
         tmr += 1
         clock.tick(50)
+       
 
 
 if __name__ == "__main__":
