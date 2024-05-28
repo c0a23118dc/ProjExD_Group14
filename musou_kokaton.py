@@ -397,8 +397,8 @@ def main():
             if event.type == pg.KEYDOWN and event.key == pg.K_e:
                 if sp.value > 8:
                     EMP(emys, bombs, screen)
-                    sp.value -= 10  # 消費SP
-            if event.type == pg.KEYDOWN and event.key == pg.K_w and score.value >= 50 and len(shields) == 0:# SHIFTを押してからCaps lockを押す
+                    sp.value -= 8  # 消費SP
+            if event.type == pg.KEYDOWN and event.key == pg.K_w and sp.value >= 3 and len(shields) == 0:# SHIFTを押してからCaps lockを押す
                 sp.value -= 3  # 消費SP
                 shields.add(Shield(bird, 400))
                 print(len(shields))
