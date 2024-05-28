@@ -101,6 +101,7 @@ class Bird(pg.sprite.Sprite):
                 self.speed = 20
             else:
                 self.speed = 10
+                
 
             
         self.rect.move_ip(self.speed*sum_mv[0], self.speed*sum_mv[1])
@@ -328,6 +329,69 @@ class EMP(pg.sprite.Sprite):
         self.life -= 1
         if self.life < 0:
             self.kill()
+            
+           
+class change_Boss():
+    """
+    １キーを押したときにボス戦警告のポップアップ表示
+    Yesを押したときボス戦開始エフェクト+背景切り替え
+    """
+    def __init__(self, screen):
+        self.screen = screen
+        self.rct = pg.Surface((800, 450))  # Surfaceを生成
+        pg.draw.rect(self.rct, (128, 128, 128), (0, 0, 800, 450))  # 灰色の矩形を生成
+        # screen.blit(self.rct, (WIDTH/2, WIDTH/2))
+        # time.sleep(1)
+        # self.bg_img = pg.image.load(f"fig/aozora.jpg")  # ボス戦の画像読み込み
+        # self.bg_img = pg.transform.scale(self.bg_img, (WIDTH, HEIGHT))  # ボス戦の背景画像サイズを調整
+        
+        self.font = pg.font.Font(None, 130)  # 文字の大きさ
+        
+        # 文字色の設定
+        self.color = (255, 255, 255)
+        self.color_red = (255, 0, 0)
+        
+        self.Yes = self.font.render("Yes", 0, self.color)
+        self.No = self.font.render("No", 0, self.color)
+        self.Ready = self.font.render("Are you ready ?", 0, self.color_red)
+        
+        # 透明度を設定
+        self.rct.set_alpha(200)
+        self.Yes.set_alpha(200)
+        self.No.set_alpha(200)
+        self.Ready.set_alpha(200)
+        
+        # 形の値を取得
+        self.rect = self.Yes.get_rect()
+        self.rect2 = self.No.get_rect()
+        self.rect3 = self.Ready.get_rect()
+        
+        self.rect.center = 600, 600  # "Yes"の位置設定
+        self.rect2.center = 1000, 600  # "No"の位置設定
+        self.rect3.center = 800, 400   # "Are you ready?"の位置設定
+        
+        self.change = True  # ポップアップが表示されている状態に設定 (True : 表示, False: 非表示)
+
+    def update(self, screen:pg.Surface):
+        screen.blit(self.rct, (400, 300))  # Surfaceの描画、座標設定
+        screen.blit(self.Yes, self.rect)  # Yesの描画
+        screen.blit(self.No, self.rect2)  # Noの描画
+        screen.blit(self.Ready, self.rect3)  # Are you ready?の描画
+        
+    def fade_in_out(self):
+        fade_surface = pg.Surface((WIDTH, HEIGHT))
+        fade_surface.fill((0, 0, 0))
+        for i in range(0, 256, 5):  # フェードイン
+            fade_surface.set_alpha(i)
+            self.screen.blit(fade_surface, (0, 0))
+            pg.display.flip()
+            pg.time.delay(30)
+        
+        # self.screen.blit(self.bg_img, (0, 0))  # 背景画像を描画
+        # pg.display.flip()
+        # time.sleep(5)  # 背景画像を３秒間表示
+            
+            
 
 
 class Powerup:
@@ -370,12 +434,16 @@ def main():
     pg.display.set_caption("こうかとん伝説（仮）")
     screen = pg.display.set_mode((WIDTH, HEIGHT))
     bg_img = pg.image.load(f"fig/pg_bg.jpg")
+    # bg_img2 = pg.image.load(f"fig/aozora.jpg")  # ボス戦の背景画像
+    # bg_img2 = pg.transform.scale(bg_img2, (WIDTH, HEIGHT))  # ボス戦の背景画像サイズを調整
+    
+    # wait = WebDriverWait(driver=driver, timeout=60)
     score = Score()
     score.value = 99999  # 実行確認のために仮置き、後で消す
     power = Powerup()
     sp = Skillpoint()
     sp.value = 99999  # 実行確認のために仮置き、後で消す
-
+    changeBoss = None  # 初期状態を設定
 
     bird = Bird(3, (900, 400))
     bombs = pg.sprite.Group()
@@ -392,6 +460,16 @@ def main():
         for event in pg.event.get():
             if event.type == pg.QUIT:
                 return 0
+            if event.type == pg.KEYDOWN and event.key == pg.K_1 and (score.value >= 300):  # 1キーを押したときポップアップを表示
+                changeBoss = change_Boss(screen) # クラス呼び出し
+            if event.type == pg.MOUSEBUTTONDOWN:
+                if changeBoss.rect.collidepoint(event.pos):
+                    changeBoss.fade_in_out()
+                    bg_img = pg.image.load(f"fig/aozora.jpg")
+                    changeBoss = None  # ポップアップを閉じる
+                elif changeBoss.rect2.collidepoint(event.pos):
+                    changeBoss = None  # ポップアップを閉じる
+                    
             if event.type == pg.KEYDOWN and event.key == pg.K_SPACE:
                 beams.add(Beam(bird))
             if event.type == pg.KEYDOWN and event.key == pg.K_RSHIFT and (sp.value >= 5):  # 右シフトキーを押したときかつスキルポイントが5以上のとき
@@ -409,6 +487,7 @@ def main():
                 sp.value -= 3  # 消費SP
                 shields.add(Shield(bird, 400))
                 print(len(shields))
+        
         screen.blit(bg_img, [0, 0])
 
         if tmr%200 == 0:  # 200フレームに1回，敵機を出現させる
@@ -495,10 +574,13 @@ def main():
         power.update(screen)
         sp.update(screen)
 
+        if changeBoss is not None:
+            changeBoss.update(screen)
         pg.display.update()
         tmr += 1
         clock.tick(50)
-
+        
+        
 
 if __name__ == "__main__":
     pg.init()
