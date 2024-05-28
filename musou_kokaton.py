@@ -256,7 +256,6 @@ class Enemy(pg.sprite.Sprite):
         self.rect.centerx -= self.vx
         
 
-
 class Score:
     """
     打ち落とした爆弾，敵機の数をスコアとして表示するクラス
@@ -274,6 +273,7 @@ class Score:
     def update(self, screen: pg.Surface):
         self.image = self.font.render(f"Score: {self.value}", 0, self.color)
         screen.blit(self.image, self.rect)
+
 
 class life_gage(pg.sprite.Sprite):
     """
@@ -333,7 +333,6 @@ class life_gage(pg.sprite.Sprite):
 
         print(damege, self.damege, self.hp_width) #ちゃんと実行されてHPが減っているかの確認
         self.hp -= damege
-
             
 
 class Shield(pg.sprite.Sprite):
@@ -463,9 +462,7 @@ class change_Boss():
         
         # self.screen.blit(self.bg_img, (0, 0))  # 背景画像を描画
         # pg.display.flip()
-        # time.sleep(5)  # 背景画像を３秒間表示
-            
-            
+        # time.sleep(5)  # 背景画像を３秒間表示      
 
 
 class Powerup:
