@@ -150,6 +150,8 @@ class Bomb(pg.sprite.Sprite):
         爆弾を速度ベクトルself.vx, self.vyに基づき移動させる
         引数 screen：画面Surface
         """
+
+        
         self.rect.move_ip(self.speed*self.vx, self.speed*self.vy)
         if check_bound(self.rect) != (True, True):
             self.kill()
@@ -240,6 +242,7 @@ class Enemy(pg.sprite.Sprite):
             self.vy = 0
             self.state = "stop"
         self.rect.centery += self.vy
+        
 
 
 class Score:
@@ -260,6 +263,66 @@ class Score:
         self.image = self.font.render(f"Score: {self.value}", 0, self.color)
         screen.blit(self.image, self.rect)
 
+class life_gage(pg.sprite.Sprite):
+    """
+    ライフゲージの作成  
+    rectを用いてHPバーを作成し被弾するにつれてHPバーが減るようにする
+    """
+
+    def __init__(self,screen):
+        self.colors = [(255, 0, 0), (0, 255, 0), (255, 255, 0)] #ライフゲージの減少に伴って色の変化をさせる
+        self.screen = screen
+
+        # hpバーの幅・高さ
+        self.hp_width = 300 # + 6
+        self.hp_height = 40  #+ 6
+
+        # HPバーを表示させたい位置
+        self.hp_x = 160
+        self.hp_y = 800
+
+        self.hp = 100 #HPの基準
+
+        self.HP_bar = pg.Surface((self.hp_width,self.hp_height)) #HPバーの土台作り
+        self.HP_back = pg.Surface((self.hp_width +6,self.hp_height+6)) #HPバーの枠兼減少の値がわかりやすいようにする
+        pg.draw.rect(self.HP_back, (0, 0, 0), (0,0,self.hp_width,self.hp_height)) #HPバーの枠作成
+        pg.draw.rect(self.HP_bar, self.colors[1], (0,0,self.hp_width,self.hp_height)) #HPバー（緑色)の作成
+        self.rect = self.HP_bar.get_rect()
+        self.rect_back = self.HP_back.get_rect()
+        
+        self.rect.centerx = self.hp_x
+        self.rect.centery = self.hp_y
+
+        self.rect_back.center = (self.hp_x, self.hp_y)
+
+        self.screen.blit(self.HP_back, self.rect_back)
+        self.screen.blit(self.HP_bar, self.rect)
+
+
+    def update(self,screen):
+        # pg.draw.rect("(0,0)~(hp,10)まで表示")
+        self.HP_bar = pg.Surface((300,self.hp_height))
+        if self.hp <= 30: #HPが30以下の時表示を赤色にする
+            pg.draw.rect(self.HP_bar, self.colors[0], (0,0,self.hp_width,self.hp_height))
+        elif self.hp <= 60: #HPが60以下の時表示を黄色にする
+            pg.draw.rect(self.HP_bar, self.colors[2], (0,0,self.hp_width,self.hp_height))
+        else: #それ以外時表示を赤色にする
+            pg.draw.rect(self.HP_bar, self.colors[1], (0,0,self.hp_width,self.hp_height))
+        self.rect = self.HP_bar.get_rect()
+        self.rect.centerx = self.hp_x
+        self.rect.centery = self.hp_y
+        screen.blit(self.HP_back, self.rect_back) #画面に反映
+        screen.blit(self.HP_bar, self.rect) #画面に反映
+
+    def dameges(self, damege):
+        self.damege = damege
+        self.damege*=3 #303行で300としているため100に割合をあわせるため
+        self.hp_width -= self.damege
+
+        print(damege, self.damege, self.hp_width) #ちゃんと実行されてHPが減っているかの確認
+        self.hp -= damege
+
+            
 
 class Shield(pg.sprite.Sprite):
     """
@@ -378,12 +441,15 @@ def main():
 
 
     bird = Bird(3, (900, 400))
+
     bombs = pg.sprite.Group()
     beams = pg.sprite.Group()
     exps = pg.sprite.Group()
     emys = pg.sprite.Group()
     shields = pg.sprite.Group()
     gravity = pg.sprite.Group()
+
+    hp = life_gage(screen)
 
     tmr = 0
     clock = pg.time.Clock()
@@ -449,9 +515,18 @@ def main():
             if bird.state == "normal":
                 bird.change_img(8, screen) # こうかとん悲しみエフェクト
                 score.update(screen)
-                pg.display.update()
-                time.sleep(2)   
-                return
+
+                # ダメージ判定
+                hp.dameges(10) #ダメージの割合、今回は敵の攻撃をくらったら10分の1ずつHPが減っていくようにする
+                # pg.display.update()
+                # time.sleep(2)
+                # time.sleep(1)
+                if hp.hp <= 0: #HPがなくなったらゲームオーバー
+                    return
+        
+        # for ---------------------------------- 
+            # if bossと当たったら チームメンバーがボスを作ったとき用
+
         for bomb in pg.sprite.groupcollide(bombs, gravity, True, False).keys():
             bomb.hp -= power.value  # 爆弾の耐久力を自分の攻撃力分だけ削る
             if bomb.hp <= 0:  # 爆弾の耐久力が0以下の時
@@ -470,14 +545,16 @@ def main():
             exps.add(Explosion(bomb, 50))
             score.value += 1
 
-        if len(pg.sprite.spritecollide(bird, bombs, True)) != 0:
-            bird.change_img(8, screen) # こうかとん悲しみエフェクト
-            score.update(screen)
-            pg.display.update()
-            time.sleep(2)
-            return
+        # if len(pg.sprite.spritecollide(bird, bombs, True)) != 0:
+        #     bird.change_img(8, screen) # こうかとん悲しみエフェクト
+        #     score.update(screen)
+        #     hp.dameges(20)
+        #     pg.display.update()
+        #     if hp.hp <= 0:
+        #         return
+        #     #time.sleep(2)
         
-
+        hp.update(screen)
         bird.update(key_lst, screen)
         beams.update()
         beams.draw(screen)
